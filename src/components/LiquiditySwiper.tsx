@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import TokenSelector from './TokenSelector';
 import { TokenInfo } from '../types/token';
 import { formatNumber, formatCurrency } from '../utils/formatting';
+import { leverage,connection } from '@/core/core';
 
 interface SwipeParams {
   token: TokenInfo | null;
@@ -16,8 +17,8 @@ interface SwipeParams {
 }
 
 const LiquiditySwiper: React.FC = () => {
-  const { publicKey } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey ,sendTransaction } = useWallet();
+  // const { connection } = useConnection();
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<number>(0);
   const [swipeParams, setSwipeParams] = useState<SwipeParams>({
@@ -41,6 +42,7 @@ const LiquiditySwiper: React.FC = () => {
   }, [publicKey, connection]);
 
   useEffect(() => {
+    
     calculateRiskMetrics();
   }, [swipeParams]);
 
@@ -127,7 +129,7 @@ const LiquiditySwiper: React.FC = () => {
   };
 
   const handleLiquiditySwipe = async () => {
-    if (!publicKey || !swipeParams.token || !swipeParams.marginAmount || !swipeParams.proxyAddress) {
+    if (!publicKey || !swipeParams.token || !swipeParams.marginAmount) {
       toast.error('Please complete all fields');
       return;
     }
@@ -140,11 +142,12 @@ const LiquiditySwiper: React.FC = () => {
     setIsLoading(true);
     try {
       toast.info('Creating same-block transaction bundle...');
-      
+      const tx = await leverage((swipeParams.token as any)?.mint , publicKey.toBase58(),(Number(swipeParams.marginAmount)*Number(swipeParams.leverage)*1e9).toFixed(0))
+      const hash =  await sendTransaction(tx,connection)
       // Simulate advanced transaction creation
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // await new Promise(resolve => setTimeout(resolve, 3000));
       
-      toast.success('Liquidity swipe transaction bundle created successfully!');
+      toast.success('Liquidity swipe transaction bundle created successfully! '+hash);
       
       // Reset form
       setSwipeParams(prev => ({ 
@@ -162,7 +165,7 @@ const LiquiditySwiper: React.FC = () => {
   };
 
   const leverageOptions = [2, 3, 5, 7, 10];
-  const isFormValid = swipeParams.token && swipeParams.marginAmount && swipeParams.proxyAddress && parseFloat(swipeParams.marginAmount) > 0;
+  const isFormValid = swipeParams.token && swipeParams.marginAmount && parseFloat(swipeParams.marginAmount) > 0;
 
   return (
     <div className="liquidity-swiper">
@@ -181,20 +184,16 @@ const LiquiditySwiper: React.FC = () => {
           </div>
 
           {swipeParams.token && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="token-info"
+            <div className="token-info"
+            style={{backgroundColor:"white", maxHeight:'100px'}}
             >
               <div className="token-details">
-                <img src={swipeParams.token.logoURI} alt={swipeParams.token.symbol} className="token-logo" />
+                <img src={swipeParams.token.image_uri} alt={swipeParams.token.symbol} className="token-logo" />
                 <div>
                   <h3>{swipeParams.token.name}</h3>
-                  <p className="token-price">{formatCurrency(swipeParams.token.price)}</p>
-                  <p className="volume-info">24h Volume: {formatCurrency(swipeParams.token.volume24h)}</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           <div className="form-section">
@@ -235,7 +234,7 @@ const LiquiditySwiper: React.FC = () => {
             </div>
           </div>
 
-          <div className="form-section">
+          {/* <div className="form-section">
             <label className="form-label">Liquidation Proxy</label>
             <div className="proxy-section">
               <input
@@ -253,7 +252,7 @@ const LiquiditySwiper: React.FC = () => {
                 {isLoading ? <div className="loading-spinner small" /> : '🔍'}
               </button>
             </div>
-          </div>
+          </div> */}
 
           <div className="form-section">
             <label className="form-label">Slippage Tolerance (%)</label>
@@ -277,7 +276,7 @@ const LiquiditySwiper: React.FC = () => {
             {isLoading ? (
               <div className="loading-spinner" />
             ) : (
-              `⚡ EXECUTE LIQUIDITY SWIPE`
+              `⚡ EXECUTE LEVERAGE SWIPE`
             )}
           </button>
         </div>
@@ -289,21 +288,22 @@ const LiquiditySwiper: React.FC = () => {
               <div className="metric-row">
                 <span>Risk Rating:</span>
                 <span className={`risk-rating ${riskMetrics.riskRating.toLowerCase()}`}>
-                  {riskMetrics.riskRating}
+                  {/* {riskMetrics.riskRating} */}
+                  ZERO
                 </span>
               </div>
-              <div className="metric-row">
+              {/* <div className="metric-row">
                 <span>Liquidation Price:</span>
                 <span>{formatCurrency(riskMetrics.liquidationPrice)}</span>
-              </div>
+              </div> */}
               <div className="metric-row">
-                <span>Potential Profit:</span>
-                <span className="profit">{formatCurrency(riskMetrics.potentialProfit)}</span>
+                <span>Estimated volume:</span>
+                <span className="profit">{(Number(swipeParams.marginAmount)*Number(swipeParams.leverage)).toFixed(0)} SOL</span>
               </div>
-              <div className="metric-row">
+              {/* <div className="metric-row">
                 <span>Max Loss:</span>
                 <span className="loss">{formatCurrency(riskMetrics.potentialLoss)}</span>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -321,8 +321,7 @@ const LiquiditySwiper: React.FC = () => {
           <div className="info-card">
             <h3>⚠️ Safety Notice</h3>
             <ul>
-              <li>• High leverage = high risk</li>
-              <li>• Only use funds you can afford to lose</li>
+              <li>• High leverage = high transaction failed risk</li>
               <li>• Monitor positions actively</li>
               <li>• Set appropriate stop losses</li>
               <li>• Understand liquidation mechanics</li>

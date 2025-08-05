@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TokenInfo } from '../types/token';
-import { getMockTokens } from '../utils/tokenData';
+import { mockTokens } from '../core/mock';
+import { getTokens } from '@/core/core';
 
 interface TokenSelectorProps {
   onTokenSelect: (token: TokenInfo) => void;
@@ -10,7 +11,7 @@ interface TokenSelectorProps {
 const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [tokens, setTokens] = useState<TokenInfo[]>([]);
+  const [tokens, setTokens] = useState([]);
   const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +24,6 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      const mockTokens = getMockTokens();
       setTokens(mockTokens);
     } catch (error) {
       console.error('Error loading tokens:', error);
@@ -32,10 +32,11 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
     }
   };
 
-  const filteredTokens = tokens.filter(token =>
-    token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // const filteredTokens = tokens.filter(token =>
+  //   token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //   token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+  const filteredTokens = tokens
 
   const handleTokenSelect = (token: TokenInfo) => {
     setSelectedToken(token);
@@ -52,7 +53,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
       >
         {selectedToken ? (
           <div className="selected-token">
-            <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="token-icon" />
+            <img src={selectedToken.image_uri} alt={selectedToken.symbol} className="token-icon" />
             <span>{selectedToken.symbol}</span>
           </div>
         ) : (
@@ -70,12 +71,19 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
             transition={{ duration: 0.2 }}
             className="dropdown-panel"
           >
-            <div className="search-container">
+            <div className="search-container flex">
               <input
                 type="text"
                 placeholder="Search tokens..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={async (e) => {
+                  setSearchTerm(e.target.value)
+                  const tk = await getTokens(e.target.value)
+                  console.log(tk)
+                  setTokens(
+                    tk
+                  )
+                }}
                 className="neo-input search-input"
                 autoFocus
               />
@@ -92,25 +100,25 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ onTokenSelect }) => {
                   No tokens found for "{searchTerm}"
                 </div>
               ) : (
-                filteredTokens.map((token) => (
+                tokens.map((token) => (
                   <motion.button
-                    key={token.address}
-                    initial={{ opacity: 0 }}
+                    key={token.mint}
+                    initial={{ opacity: 0 }}    
                     animate={{ opacity: 1 }}
                     className="token-item"
                     onClick={() => handleTokenSelect(token)}
                   >
-                    <img src={token.logoURI} alt={token.symbol} className="token-icon" />
+                    <img src={token.image_uri} alt={token.symbol} className="token-icon" />
                     <div className="token-info">
                       <div className="token-primary">
                         <span className="token-symbol">{token.symbol}</span>
-                        <span className="token-price">${token.price.toFixed(6)}</span>
+                        {/* <span className="token-price">${token.price.toFixed(6)}</span> */}
                       </div>
                       <div className="token-secondary">
                         <span className="token-name">{token.name}</span>
-                        <span className={`price-change ${token.priceChange24h >= 0 ? 'positive' : 'negative'}`}>
+                        {/* <span className={`price-change ${token.priceChange24h >= 0 ? 'positive' : 'negative'}`}>
                           {token.priceChange24h >= 0 ? '+' : ''}{token.priceChange24h.toFixed(2)}%
-                        </span>
+                        </span> */}
                       </div>
                     </div>
                   </motion.button>

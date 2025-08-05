@@ -12,7 +12,7 @@ const TradingInterface: React.FC = () => {
   const tabs = [
     { id: 'scrub', label: 'Token Scrubbing', icon: '🔥' },
     { id: 'swipe', label: 'Liquidity Swiping', icon: '⚡' },
-    { id: 'history', label: 'Transaction History', icon: '📊' }
+    // { id: 'history', label: 'Transaction History', icon: '📊' }
   ] as const;
 
   return (

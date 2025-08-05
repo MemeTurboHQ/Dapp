@@ -3,7 +3,7 @@ export interface TokenInfo {
   name: string;
   symbol: string;
   decimals: number;
-  logoURI: string;
+  image_uri: string;
   price: number;
   priceChange24h: number;
   volume24h: number;

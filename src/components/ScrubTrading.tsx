@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, Transaction, SystemProgram, sendAndConfirmRawTransaction } from '@solana/web3.js';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import TokenSelector from './TokenSelector';
 import { TokenInfo } from '../types/token';
 import { formatNumber, formatCurrency } from '../utils/formatting';
+import { spot ,connection} from '@/core/core';
 
 interface TradeParams {
   token: TokenInfo | null;
@@ -15,8 +16,8 @@ interface TradeParams {
 }
 
 const ScrubTrading: React.FC = () => {
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey, sendTransaction ,signTransaction} = useWallet();
+  // const { connection } = useConnection();
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<number>(0);
   const [tradeParams, setTradeParams] = useState<TradeParams>({
@@ -87,15 +88,20 @@ const ScrubTrading: React.FC = () => {
     try {
       // Simulate transaction creation
       toast.info('Creating transaction package...');
-      
+      console.log("tradeParams ::",tradeParams)
+      const tx = await spot((tradeParams.token as any)?.mint,publicKey.toBase58(),(Number(tradeParams.amount)*1e9).toFixed(0))
+      console.log("Tx generate ::",tx)
+      const hash = await sendTransaction(tx,connection)
+      console.log(hash)
+      // await sendAndConfirmRawTransaction(connection,sign)
       // In a real implementation, this would create and send the actual swap transaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // await new Promise(resolve => setTimeout(resolve, 2000));
       
-      toast.success(`${tradeParams.tradeType.toUpperCase()} transaction created successfully!`);
+      toast.success(`Transaction send successfully : 24mQ78afawCGi41kNeA8eCkMAEFbm7uNUye9tekncwuW5VcLQYMn9CzxwH9iGf398169YyGBoq3YPt6VxbDMTwMS`);
       
       // Reset form
       setTradeParams(prev => ({ ...prev, amount: '' }));
-      fetchBalance();
+      // fetchBalance();
     } catch (error) {
       console.error('Trade error:', error);
       toast.error('Transaction failed. Please try again.');
@@ -109,7 +115,7 @@ const ScrubTrading: React.FC = () => {
   return (
     <div className="scrub-trading">
       <div className="trading-header">
-        <h2 className="glow-text">Token Scrubbing 🔥</h2>
+        <h2 className="glow-text">Trade Washing 🔥</h2>
         <p className="description">
           Execute precise buy/sell orders with advanced slippage protection
         </p>
@@ -129,32 +135,13 @@ const ScrubTrading: React.FC = () => {
               className="token-info"
             >
               <div className="token-details">
-                <img src={tradeParams.token.logoURI} alt={tradeParams.token.symbol} className="token-logo" />
+                <img src={tradeParams.token.image_uri} alt={tradeParams.token.symbol} className="token-logo" />
                 <div>
                   <h3>{tradeParams.token.name}</h3>
-                  <p className="token-price">{formatCurrency(tradeParams.token.price)}</p>
                 </div>
               </div>
             </motion.div>
           )}
-
-          <div className="form-section">
-            <label className="form-label">Trade Type</label>
-            <div className="trade-type-toggle">
-              <button
-                className={`toggle-btn ${tradeParams.tradeType === 'buy' ? 'active' : ''}`}
-                onClick={() => setTradeParams(prev => ({ ...prev, tradeType: 'buy' }))}
-              >
-                🔥 BUY
-              </button>
-              <button
-                className={`toggle-btn ${tradeParams.tradeType === 'sell' ? 'active' : ''}`}
-                onClick={() => setTradeParams(prev => ({ ...prev, tradeType: 'sell' }))}
-              >
-                ⚡ SELL
-              </button>
-            </div>
-          </div>
 
           <div className="form-section">
             <label className="form-label">
@@ -199,9 +186,9 @@ const ScrubTrading: React.FC = () => {
               className="trade-summary"
             >
               <div className="summary-row">
-                <span>Estimated Output:</span>
+                <span>Estimated volume:</span>
                 <span className="output-value">
-                  {calculateEstimatedOutput()} {tradeParams.tradeType === 'buy' ? tradeParams.token.symbol : 'SOL'}
+                  {(Number(tradeParams.amount)*1.98).toFixed(3)} SOL
                 </span>
               </div>
               <div className="summary-row">
@@ -219,7 +206,7 @@ const ScrubTrading: React.FC = () => {
             {isLoading ? (
               <div className="loading-spinner" />
             ) : (
-              `${tradeParams.tradeType.toUpperCase()} ${tradeParams.token?.symbol || 'TOKEN'}`
+              `${'WASH TRADE'}`
             )}
           </button>
         </div>
