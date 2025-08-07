@@ -14,7 +14,11 @@ import ParticleBackground from './components/ParticleBackground';
 import 'react-toastify/dist/ReactToastify.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import './styles/index.css';
+import { Buffer } from 'buffer';
 
+if (!window.Buffer) {
+  window.Buffer = Buffer;
+}
 function App() {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
